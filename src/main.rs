@@ -28,17 +28,31 @@ async fn main() -> Result<()> {
     let bot = Bot::from_env();
     let mut todo = Todo::new(Some(TODO_FILE))?;
 
-    // TODO: command to force save a day
-    // TODO: /stop command
-    // TODO: /start command
+    // TODO: command to force save a day (use update_todo)
     // TODO: maybe make this into a systemd thing
     // TODO: button to copy day
 
     let mut today_present = false;
-    if todo.today.sections.len() != 0 {
+    if todo.today.sections.len() != 1 {
+        // today always has Done section, so we only count it as existent if it has other sections
+        // this accounts for the anonymous section
         today_present = true;
     }
 
+    update_todo(&bot, &mut todo, &mut today_present).await?;
+
+    if !today_present {
+        if todo.today.date < today() {
+            todo.next_day();
+        }
+        print_day_msg(bot, &todo.today).await?;
+    }
+
+    todo.save()?;
+    Ok(())
+}
+
+async fn update_todo<'a>(bot: &Bot, todo: &mut Todo<'a>, today_present: &mut bool) -> Result<()> {
     let updates = bot.get_updates().await?;
     let mut last_update_id = -1;
 
@@ -46,7 +60,7 @@ async fn main() -> Result<()> {
         if let Ok(day) = is_day_msg(&u) {
             if day.date == today() {
                 todo.today = day;
-                today_present = true;
+                *today_present = true;
             } else if !todo.days.contains(&day) && day.date < today() {
                 todo.days.push(day);
             } else {
@@ -57,7 +71,7 @@ async fn main() -> Result<()> {
     }
 
     if last_update_id != -1 {
-        // ack update
+        // ack last processed update
         bot.get_updates()
             .offset(last_update_id + 1)
             .send()
@@ -65,14 +79,9 @@ async fn main() -> Result<()> {
             .unwrap();
     }
 
-    if !today_present {
-        todo.next_day();
-        print_day_msg(bot, &todo.today).await?;
-    }
-    todo.save()?;
-
     Ok(())
 }
+
 fn is_day_msg(update: &Update) -> Result<Day> {
     match &update.kind {
         // use last update
