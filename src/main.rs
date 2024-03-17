@@ -3,8 +3,10 @@ use std::{error, result};
 
 use netxt::{today, Day, Todo};
 
+use teloxide::payloads::GetUpdatesSetters;
 use teloxide::prelude::*;
 use teloxide::types::{
+    AllowedUpdate,
     MediaKind::Text,
     MessageKind::Common,
     Recipient::Id,
@@ -32,19 +34,11 @@ async fn main() -> Result<()> {
     // TODO: maybe make this into a systemd thing
     // TODO: button to copy day
 
-    let mut today_present = false;
-    if todo.today.sections.len() != 1 {
-        // today always has Done section, so we only count it as existent if it has other sections
-        // this accounts for the anonymous section
-        today_present = true;
-    }
+    update_todo(&bot, &mut todo).await?;
 
-    update_todo(&bot, &mut todo, &mut today_present).await?;
-
-    if !today_present {
-        if todo.today.date < today() {
-            todo.next_day();
-        }
+    let last_day = todo.days.iter().max_by_key(|d: &&Day| d.date).unwrap();
+    if last_day.date < today() {
+        todo.next_day();
         print_day_msg(bot, &todo.today).await?;
     }
 
@@ -52,22 +46,31 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn update_todo<'a>(bot: &Bot, todo: &mut Todo<'a>, today_present: &mut bool) -> Result<()> {
-    let updates = bot.get_updates().await?;
+async fn update_todo<'a>(bot: &Bot, todo: &mut Todo<'a>) -> Result<()> {
+    let updates = bot
+        .get_updates()
+        .allowed_updates([AllowedUpdate::Message, AllowedUpdate::EditedMessage])
+        .await?;
     let mut last_update_id = -1;
 
     for u in updates {
+        last_update_id = u.id;
         if let Ok(day) = is_day_msg(&u) {
+            println!("{day}");
             if day.date == today() {
                 todo.today = day;
-                *today_present = true;
             } else if !todo.days.contains(&day) && day.date < today() {
                 todo.days.push(day);
             } else {
-                return err!("wrong date");
+                // ack last processed update
+                bot.get_updates()
+                    .offset(last_update_id + 1)
+                    .send()
+                    .await
+                    .unwrap();
+                return err!("Unable to update a previous day that is already registered");
             }
         }
-        last_update_id = u.id;
     }
 
     if last_update_id != -1 {
@@ -88,7 +91,6 @@ fn is_day_msg(update: &Update) -> Result<Day> {
         Message(msg) | EditedMessage(msg) => {
             if let Common(msg_common) = &msg.kind {
                 if let Text(txt) = &msg_common.media_kind {
-                    println!("{}", txt.text);
                     let day: Day = txt.text.parse()?;
                     return Ok(day);
                 }
@@ -96,7 +98,7 @@ fn is_day_msg(update: &Update) -> Result<Day> {
             err!("Update is not Message or EditedMessage")
         }
         _ => {
-            err!("nothing to update today")
+            err!("Nothing to update today")
         }
     }
 }
