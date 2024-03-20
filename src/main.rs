@@ -1,5 +1,9 @@
 extern crate netxt;
-use std::{error, result};
+use std::{
+    error, fmt,
+    io::{stdout, Write},
+    result,
+};
 
 use netxt::{today, Day, Todo};
 
@@ -22,6 +26,27 @@ macro_rules! err {
 
 type Result<T> = result::Result<T, Box<dyn error::Error>>;
 
+#[derive(Debug)]
+enum UpdateError {
+    NoUpdates,
+}
+
+impl fmt::Display for UpdateError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            UpdateError::NoUpdates => write!(f, "No new updates"),
+        }
+    }
+}
+
+impl error::Error for UpdateError {
+    fn description(&self) -> &str {
+        match *self {
+            UpdateError::NoUpdates => "No new updates",
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     pretty_env_logger::init();
@@ -34,10 +59,15 @@ async fn main() -> Result<()> {
     // TODO: maybe make this into a systemd thing
     // TODO: button to copy day
 
-    update_todo(&bot, &mut todo).await?;
+    update_todo(&bot, &mut todo).await?; // TODO: use NoUpdates error
 
-    let last_day = todo.days.iter().max_by_key(|d: &&Day| d.date).unwrap();
-    if last_day.date < today() {
+    if todo.days.len() != 0 {
+        let last_day = todo.days.iter().max_by_key(|d: &&Day| d.date).unwrap();
+        if last_day.date < today() {
+            todo.next_day();
+            print_day_msg(bot, &todo.today).await?;
+        }
+    } else {
         todo.next_day();
         print_day_msg(bot, &todo.today).await?;
     }
@@ -51,6 +81,9 @@ async fn update_todo<'a>(bot: &Bot, todo: &mut Todo<'a>) -> Result<()> {
         .get_updates()
         .allowed_updates([AllowedUpdate::Message, AllowedUpdate::EditedMessage])
         .await?;
+    if updates.len() == 0 {
+        return Err(From::from(UpdateError::NoUpdates));
+    }
     let mut last_update_id = -1;
 
     for u in updates {
