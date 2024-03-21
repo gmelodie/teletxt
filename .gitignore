@@ -17,4 +17,9 @@ Cargo.lock
 # Added by cargo
 /target
 
+todos/*
 todo.txt
+
+allowed-users.txt
+
+
