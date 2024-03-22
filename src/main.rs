@@ -6,7 +6,7 @@ use std::{
     result,
 };
 
-use netxt::{today, Day, Todo};
+use netxt::{Day, Todo};
 
 use teloxide::payloads::GetUpdatesSetters;
 use teloxide::prelude::*;
@@ -103,23 +103,15 @@ async fn update_todo(username: &str, day: &Day) -> Result<()> {
         return err!("Username not whitelisted");
     }
 
-    println!("Saving... {day}");
-    if day.date == today() {
-        todo.today = day.clone();
-    } else if !todo.days.contains(&day) && day.date < today() {
-        todo.days.push(day.clone());
-    } else {
-        return err!("Unable to update a previous day that is already registered");
+    // remove old day and put new one in place
+    if todo.days.iter().any(|d| d.date == day.date) {
+        let index = todo.days.iter().position(|x| x.date == day.date).unwrap(); // this should always be possible since we are sure it .contains(&day)
+        todo.days.remove(index);
     }
-    // TODO: fix error saving twice (think its here) get rid of the today bullshit
-    if todo.days.len() == 0 {
-        todo.next_day();
-    } else {
-        let last_day = todo.days.iter().max_by_key(|d: &&Day| d.date).unwrap();
-        if last_day.date < today() {
-            todo.next_day();
-        }
-    }
+    todo.days.push(day.clone());
+
+    // if day in question is not today, create today (next_day does nothing in case today already exists)
+    todo.next_day();
 
     todo.save()?;
 
