@@ -1,4 +1,8 @@
 # TODO
-1. Logging (production vs dev)
-2. Docker container (use volume to keep data)
-3. How to backup data?
+- [ ] Logging (production vs dev)
+- [ ] Docker
+    - [x] Create Docker container
+    - [x] Multi stage build for docker (smaller images)
+    - [ ] Use volume to hold data
+- [ ] Make bot run forever (for running inside docker)
+- [ ] How to backup data?

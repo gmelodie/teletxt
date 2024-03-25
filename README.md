@@ -37,3 +37,8 @@ export TELOXIDE_TOKEN=YOUR_BOTS_TOKEN
 cargo run
 ```
 
+4. Optional: Docker
+```bash
+sudo docker build -t app-teletxt . && sudo docker run -e TELOXIDE_TOKEN="YOUR_BOTS_TOKEN" -t app-teletxt
+```
+
