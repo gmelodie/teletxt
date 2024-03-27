@@ -1,18 +1,13 @@
 extern crate netxt;
-use std::{
-    env, error, fmt, fs,
-    io::{stdout, Write},
-    path::Path,
-    result,
-};
-
-use netxt::{Day, Todo};
+use std::{env, error, fmt, fs, path::Path, result};
 
 use teloxide::payloads::GetUpdatesSetters;
 use teloxide::prelude::*;
 use teloxide::types::{
     AllowedUpdate, MediaKind::Text, Message, MessageKind::Common, UpdateKind, User,
 };
+
+use netxt::{Day, Todo};
 
 static TODO_DIR: &str = "todos";
 static ALLOWED_USERS_FILE: &str = "allowed-users.txt";
@@ -66,12 +61,13 @@ async fn main() -> Result<()> {
     let mut last_update_id = -1;
 
     for u in updates {
-        println!("{:#?}", u);
+        log::debug!("{:#?}", u);
         if let Ok((username, day)) = is_valid_update(&u) {
+            log::info!("Received update from user '{username}'");
             if let Err(err) = update_todo(&username, &day).await {
-                // TODO: use NoUpdates error
-                writeln!(stdout(), "{err}, leaving update {} without ack", u.id)?;
-                continue; // this makes it so that the update is not acked (we want to leave it to retry since it seems to be a valid day if it got here)
+                // TODO: use NoUpdates error (add variant)
+                log::error!("{err}, leaving update {} without ack", u.id);
+                continue; // do not ack this update (leave it to retry since it seems to be a valid day if it got here)
             }
         }
         last_update_id = u.id;
