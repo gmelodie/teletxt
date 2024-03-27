@@ -31,14 +31,29 @@ Because the bot needs to see your todo list, I've decided to not make it a servi
 2. Export the token so the app sees it.
 ```bash
 export TELOXIDE_TOKEN=YOUR_BOTS_TOKEN
+export ALLOWED_USERS_FILE=/some/directory/allowed-users.txt # optional
+export TODO_DIR=/some/directory/todos # optional
 ```
-3. Run the bot.
+
+3. Make sure `allowed-users.txt` (with the users allowed to talk to the bot, one per line) and the `todo` directory both exist.
+
+4. Run the bot.
 ```bash
 cargo run
 ```
 
-4. Optional: Docker
+5. Optional: Docker (Compose)
+
+Create `.env` file with the following contents:
 ```bash
-sudo docker build -t app-teletxt . && sudo docker run -e TELOXIDE_TOKEN="YOUR_BOTS_TOKEN" -t app-teletxt
+RUST_LOG=info
+ALLOWED_USERS_FILE=/some/directory/allowed-users.txt
+TODO_DIR=/some/directory/todos
+TELOXIDE_TOKEN=YOUR_BOTS_TOKEN
+```
+
+Then bring container and volume up
+```bash
+sudo docker compose up
 ```
 

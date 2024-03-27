@@ -1,6 +1,6 @@
 extern crate netxt;
 use std::{
-    error, fmt, fs,
+    env, error, fmt, fs,
     io::{stdout, Write},
     path::Path,
     result,
@@ -92,14 +92,15 @@ async fn main() -> Result<()> {
 async fn update_todo(username: &str, day: &Day) -> Result<()> {
     // load todo from file or create if doesnt exist
     // ./TODO_DIR/{username}.txt
-    let file_path = Path::new(TODO_DIR)
+    let todo_dir: &str = &env::var("TODO_DIR").unwrap_or(TODO_DIR.to_string());
+    let file_path = Path::new(todo_dir)
         .join(format!("{username}.txt"))
         .display()
         .to_string();
     let mut todo = Todo::new(Some(&file_path))?;
 
     // if user is not allowed, ignore this update
-    if !allowed_user(username)? {
+    if !allowed_user(username) {
         return err!("Username not whitelisted");
     }
 
@@ -138,24 +139,26 @@ fn is_valid_update(update: &Update) -> Result<(String, Day)> {
     }
 }
 
-fn allowed_user(username: &str) -> Result<bool> {
-    // open ALLOWED_USERS_FILE, return err if not exists
-    match fs::read_to_string(ALLOWED_USERS_FILE) {
+fn allowed_user(username: &str) -> bool {
+    // open ALLOWED_USERS_FILE, panic if it doesn't exist
+    let allowed_users_file: &str =
+        &env::var("ALLOWED_USERS_FILE").unwrap_or(ALLOWED_USERS_FILE.to_string());
+    match fs::read_to_string(allowed_users_file) {
         Ok(users_file) => {
             for line in users_file.lines() {
                 if username == line.trim() {
-                    return Ok(true);
+                    return true;
                 }
             }
         }
         Err(err) => {
-            return err!(
+            panic!(
                 "Unable to read allowed users file {}: {err}",
                 ALLOWED_USERS_FILE
             );
         }
     }
-    Ok(false)
+    false
 }
 
 fn get_msg(update: &Update) -> Result<&Message> {

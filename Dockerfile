@@ -15,13 +15,4 @@ RUN apt-get update && apt install -y openssl tzdata ca-certificates && update-ca
 COPY --from=builder /usr/src/teletxt/target/release/teletxt /
 USER root
 
-ENV RUST_LOG=info
-ENV RUST_BACKTRACE=full
-
-# VOLUME /app # TODO put todos here (get todo dir from env var)
 CMD ["/teletxt"]
-
-
-
-
-

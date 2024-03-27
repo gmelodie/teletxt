@@ -1,0 +1,11 @@
+services:
+  teletxt:
+    build: .
+    environment:
+      - TELOXIDE_TOKEN=${TELOXIDE_TOKEN}
+      - RUST_LOG=info
+      - ALLOWED_USERS_FILE=/allowed-users.txt
+      - TODO_DIR=/todos
+    volumes:
+      - ${ALLOWED_USERS_FILE}:/allowed-users.txt
+      - ${TODO_DIR}:/todos
