@@ -1,30 +1,23 @@
 extern crate netxt;
 use netxt::{Day, Todo};
-use std::{env, error, fs, path::Path, result};
+use std::{env, error, fs, path::PathBuf, result};
 use teloxide::types::{MediaKind::Text, Message, MessageKind::Common, User};
 
 macro_rules! err {
     ($($tt:tt)*) => { Err(Box::<dyn error::Error + Send + Sync>::from(format!($($tt)*))) };
 }
 
-static TODO_DIR: &str = "todos";
-static ALLOWED_USERS_FILE: &str = "allowed-users.txt";
+pub static TODO_DIR: &str = "todos";
+pub static ALLOWED_USERS_FILE: &str = "allowed-users.txt";
 
 type Result<T> = result::Result<T, Box<dyn error::Error + Send + Sync>>;
 
 pub async fn update_todo(username: &str, day: &Day) -> Result<()> {
-    // load todo from file or create if doesnt exist
-    // ./TODO_DIR/{username}.txt
-    let todo_dir: &str = &env::var("TODO_DIR").unwrap_or(TODO_DIR.to_string());
-    let file_path = Path::new(todo_dir)
-        .join(format!("{username}.txt"))
-        .display()
-        .to_string();
-    let mut todo = Todo::new(Some(&file_path))?;
+    let mut todo = get_todo(username)?;
 
     // if user is not allowed, ignore this update
     if !allowed_user(username) {
-        return err!("Username not whitelisted");
+        return err!("Username not allowed");
     }
 
     // remove old day and put new one in place
@@ -40,6 +33,20 @@ pub async fn update_todo(username: &str, day: &Day) -> Result<()> {
     todo.save()?;
 
     Ok(())
+}
+
+/// Gets the todo for a user given a username
+pub fn get_todo(username: &str) -> Result<Todo> {
+    // load todo from file or create if doesnt exist
+    // ./TODO_DIR/{username}.txt
+    let todo_dir: &str = &env::var("TODO_DIR").unwrap_or(TODO_DIR.to_string());
+    let file_path = PathBuf::new()
+        .join(todo_dir)
+        .join(format!("{username}.txt"))
+        .display()
+        .to_string();
+    let todo = Todo::new(Some(&file_path))?;
+    Ok(todo)
 }
 
 /// Validates and, if valid, parses a Day from an Update message
@@ -81,7 +88,7 @@ pub fn allowed_user(username: &str) -> bool {
     false
 }
 
-fn get_user(msg: &Message) -> Result<User> {
+pub fn get_user(msg: &Message) -> Result<User> {
     match &msg.kind {
         Common(message_common) => {
             let user = message_common

@@ -7,16 +7,22 @@
     - [x] Use volume to hold data
 
 - [x] Make bot run forever (websocket, for running inside docker)
-    - [ ] Load file, do not throw anything out
+    - [x] Load file, do not throw anything out
         - [ ] implement Merge for todo
-    - [ ] Give me the file stored in server (export)
+    - [x] Give me the file stored in server (export)
 
-- [ ] Add Commands
-    - [ ] /start
-    - [ ] /download
-    - [ ] /upload
+- [x] Add Commands
+    - [x] /start
+    - [x] /download
+    - [x] /upload
 
-- [ ] Give user feedback
+- [x] Give user feedback
+
+- [ ] UX
+    - [ ] Give user more information about errors
+    - [ ] Inline keyboard
+    - [ ] Tell user where in todo file syntax error is (which day/section)
+
 - [ ] Remove done section
 
 - [ ] New data structure for Days (sorted, hashmap)
