@@ -19,7 +19,7 @@
 - [x] Give user feedback
 
 - [ ] UX
-    - [ ] Give user more information about errors
+    - [x] Give user more information about errors
     - [ ] Inline keyboard
     - [ ] Tell user where in todo file syntax error is (which day/section)
 
@@ -29,3 +29,4 @@
 
 - [ ] v0.2.0? record of what's done instead of todo
 
+- [ ] move Result and err macro to util.rs, import on others

@@ -1,14 +1,14 @@
 extern crate netxt;
+use crate::util::{allowed_user, file_path_from_username, get_user};
 use netxt::{Day, Todo};
-use std::{env, error, fs, path::PathBuf, result};
-use teloxide::types::{MediaKind::Text, Message, MessageKind::Common, User};
+use std::{error, result};
+use teloxide::types::{MediaKind::Text, Message, MessageKind::Common};
+
+pub mod util;
 
 macro_rules! err {
     ($($tt:tt)*) => { Err(Box::<dyn error::Error + Send + Sync>::from(format!($($tt)*))) };
 }
-
-pub static TODO_DIR: &str = "todos";
-pub static ALLOWED_USERS_FILE: &str = "allowed-users.txt";
 
 type Result<T> = result::Result<T, Box<dyn error::Error + Send + Sync>>;
 
@@ -37,14 +37,7 @@ pub async fn update_todo(username: &str, day: &Day) -> Result<()> {
 
 /// Gets the todo for a user given a username
 pub fn get_todo(username: &str) -> Result<Todo> {
-    // load todo from file or create if doesnt exist
-    // ./TODO_DIR/{username}.txt
-    let todo_dir: &str = &env::var("TODO_DIR").unwrap_or(TODO_DIR.to_string());
-    let file_path = PathBuf::new()
-        .join(todo_dir)
-        .join(format!("{username}.txt"))
-        .display()
-        .to_string();
+    let file_path = file_path_from_username(username);
     let todo = Todo::new(Some(&file_path))?;
     Ok(todo)
 }
@@ -63,43 +56,6 @@ pub fn is_valid_msg(msg: &Message) -> Result<(String, Day)> {
         Ok((username, day))
     } else {
         err!("No username found in message")
-    }
-}
-
-pub fn allowed_user(username: &str) -> bool {
-    // open ALLOWED_USERS_FILE, panic if it doesn't exist
-    let allowed_users_file: &str =
-        &env::var("ALLOWED_USERS_FILE").unwrap_or(ALLOWED_USERS_FILE.to_string());
-    match fs::read_to_string(allowed_users_file) {
-        Ok(users_file) => {
-            for line in users_file.lines() {
-                if username == line.trim() {
-                    return true;
-                }
-            }
-        }
-        Err(err) => {
-            panic!(
-                "Unable to read allowed users file {}: {err}",
-                ALLOWED_USERS_FILE
-            );
-        }
-    }
-    false
-}
-
-pub fn get_user(msg: &Message) -> Result<User> {
-    match &msg.kind {
-        Common(message_common) => {
-            let user = message_common
-                .from
-                .clone()
-                .expect("Unable to find user in message");
-            Ok(user)
-        }
-        _ => {
-            err!("Not a common type message")
-        }
     }
 }
 

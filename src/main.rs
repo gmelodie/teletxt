@@ -1,4 +1,4 @@
-use std::{env, error, path::PathBuf, result};
+use std::{error, result};
 
 use teloxide::{
     dispatching::{dialogue, dialogue::InMemStorage, UpdateHandler},
@@ -9,7 +9,10 @@ use teloxide::{
 };
 use tokio::fs::{read_to_string, File};
 
-use teletxt::{allowed_user, get_user, is_valid_msg, update_todo, TODO_DIR};
+use teletxt::{
+    is_valid_msg, update_todo,
+    util::{allowed_user, file_path_from_username, get_user},
+};
 
 use netxt::Todo;
 
@@ -113,6 +116,13 @@ Done
 async fn download(bot: Bot, msg: Message) -> Result<()> {
     let user = get_user(&msg)?;
     match user.username {
+        None => {
+            bot.send_message(
+                msg.chat.id,
+                "Username not found in telegram message".to_string(),
+            )
+            .await?;
+        }
         Some(username) => {
             // if user is in allow list and file for this user exists, send it
             if !allowed_user(&username) {
@@ -120,22 +130,11 @@ async fn download(bot: Bot, msg: Message) -> Result<()> {
                     .await?;
                 return err!("Username not allowed");
             }
-            let todo_dir: &str = &env::var("TODO_DIR").unwrap_or(TODO_DIR.to_string());
-            let file_path = PathBuf::new()
-                .join(todo_dir)
-                .join(format!("{username}.txt"))
-                .display()
-                .to_string();
+
+            let file_path = file_path_from_username(&username);
             let file = InputFile::file(file_path);
             // Send file to user
             bot.send_document(msg.chat.id, file).await?;
-        }
-        None => {
-            bot.send_message(
-                msg.chat.id,
-                "Username not found in telegram message".to_string(),
-            )
-            .await?; // TODO: implement download
         }
     }
     Ok(())
@@ -144,6 +143,13 @@ async fn download(bot: Bot, msg: Message) -> Result<()> {
 async fn upload(bot: Bot, msg: &Message, document: &Document) -> Result<()> {
     let user = get_user(msg)?;
     match user.username {
+        None => {
+            bot.send_message(
+                msg.chat.id,
+                "Username not found in telegram message".to_string(),
+            )
+            .await?;
+        }
         Some(username) => {
             // if user is in allow list and file for this user exists, send it
             if !allowed_user(&username) {
@@ -151,8 +157,6 @@ async fn upload(bot: Bot, msg: &Message, document: &Document) -> Result<()> {
                     .await?;
                 return err!("Username not allowed");
             }
-            log::debug!("Upload called");
-            // TODO: implement upload
 
             // get file from user
             let file_id = document.file.id.clone();
@@ -167,26 +171,19 @@ async fn upload(bot: Bot, msg: &Message, document: &Document) -> Result<()> {
                 .parse()?;
 
             // set new path to todo
-            let todo_dir: &str = &env::var("TODO_DIR").unwrap_or(TODO_DIR.to_string());
-            let file_path = PathBuf::new()
-                .join(todo_dir)
-                .join(format!("{username}.txt"))
-                .display()
-                .to_string();
-            todo.file_path = file_path.into();
+            todo.file_path = file_path_from_username(&username).into();
             todo.save()?;
+
+            log::info!(
+                "File {} saved for user {}",
+                file_path_from_username(&username),
+                username
+            );
 
             // let user know that everything is ok
             bot.send_message(
                 msg.chat.id,
                 format!("File saved for user {username}").to_string(),
-            )
-            .await?;
-        }
-        None => {
-            bot.send_message(
-                msg.chat.id,
-                "Username not found in telegram message".to_string(),
             )
             .await?;
         }
@@ -206,6 +203,12 @@ async fn receive_message(bot: Bot, _dialogue: MyDialogue, msg: Message) -> Resul
 
     if let Ok((username, day)) = is_valid_msg(&msg) {
         if let Err(err) = update_todo(&username, &day).await {
+            // TODO: better error handling, only send to user when there's no other way to fix
+            bot.send_message(
+                msg.chat.id,
+                format!("Could not update TODO: {err}").to_string(),
+            )
+            .await?;
             return err!("Could not update TODO for message {}: {err}", msg.id);
         }
     }
