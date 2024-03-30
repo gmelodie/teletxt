@@ -1,4 +1,4 @@
-use std::{error, result};
+use std::error;
 
 use teloxide::{
     dispatching::{dialogue, dialogue::InMemStorage, UpdateHandler},
@@ -10,20 +10,13 @@ use teloxide::{
 use tokio::fs::{read_to_string, File};
 
 use teletxt::{
-    is_valid_msg, update_todo,
-    util::{allowed_user, file_path_from_username, get_user},
+    err, is_valid_msg, update_todo,
+    util::{allowed_user, file_path_from_username, get_user, Result},
 };
 
 use netxt::Todo;
 
-type Result<T> = result::Result<T, Box<dyn error::Error + Send + Sync + 'static>>;
-
 type MyDialogue = Dialogue<State, InMemStorage<State>>;
-
-// TODO: do not have macro and the result type redefined here and in lib.rs
-macro_rules! err {
-    ($($tt:tt)*) => { Err(Box::<dyn error::Error + Send + Sync + 'static>::from(format!($($tt)*))) };
-}
 
 #[derive(Clone, Default)]
 pub enum State {

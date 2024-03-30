@@ -1,16 +1,10 @@
 extern crate netxt;
-use crate::util::{allowed_user, file_path_from_username, get_user};
+use crate::util::{allowed_user, file_path_from_username, get_user, Result};
 use netxt::{Day, Todo};
-use std::{error, result};
+use std::error;
 use teloxide::types::{MediaKind::Text, Message, MessageKind::Common};
 
 pub mod util;
-
-macro_rules! err {
-    ($($tt:tt)*) => { Err(Box::<dyn error::Error + Send + Sync>::from(format!($($tt)*))) };
-}
-
-type Result<T> = result::Result<T, Box<dyn error::Error + Send + Sync>>;
 
 pub async fn update_todo(username: &str, day: &Day) -> Result<()> {
     let mut todo = get_todo(username)?;

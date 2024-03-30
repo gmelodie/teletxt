@@ -4,6 +4,7 @@ use teloxide::types::{Message, MessageKind::Common, User};
 static TODO_DIR: &str = "todos";
 static ALLOWED_USERS_FILE: &str = "allowed-users.txt";
 
+#[macro_export]
 macro_rules! err {
     ($($tt:tt)*) => { Err(Box::<dyn error::Error + Send + Sync>::from(format!($($tt)*))) };
 }
