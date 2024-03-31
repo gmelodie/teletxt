@@ -15,6 +15,7 @@
     - [x] /start
     - [x] /download
     - [x] /upload
+    - [x] add descriptions
 
 - [x] Give user feedback
 
@@ -22,10 +23,13 @@
     - [x] Give user more information about errors
     - [x] Tell user where in todo file syntax error is (which day/section)
 
-- [ ] Remove done section
+- [x] v0.2.0? record of what's done instead of todo
+    - [x] Remove done section (netxt)
+    - [x] Change syntax examples
+    - [x] Change spec.md
+    - [x] New data structure for Days (sorted, hashmap)
 
-- [ ] New data structure for Days (sorted, hashmap)
-
-- [ ] v0.2.0? record of what's done instead of todo
 
 - [x] move Result and err macro to util.rs, import on others
+
+- [ ] Make CLI that can be run in dispatch mode or as a single-shot

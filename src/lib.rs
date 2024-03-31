@@ -15,14 +15,7 @@ pub async fn update_todo(username: &str, day: &Day) -> Result<()> {
     }
 
     // remove old day and put new one in place
-    if todo.days.iter().any(|d| d.date == day.date) {
-        let index = todo.days.iter().position(|x| x.date == day.date).unwrap(); // this should always be possible since we are sure it .contains(&day)
-        todo.days.remove(index);
-    }
-    todo.days.push(day.clone());
-
-    // if day in question is not today, create today (next_day does nothing in case today already exists)
-    todo.next_day();
+    let _ = todo.days.insert(day.date, day.clone());
 
     todo.save()?;
 

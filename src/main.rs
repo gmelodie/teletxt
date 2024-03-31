@@ -30,11 +30,11 @@ pub enum State {
 #[derive(BotCommands, Clone)]
 #[command(rename_rule = "lowercase")]
 enum Command {
-    /// Display this text.
+    #[command(description = "display this text.")]
     Help,
-    /// Lets user know that bot is running (doesn't actually start bot)
+    #[command(description = "Lets user know that bot is running")]
     Start,
-    /// Downloads todo file for current user from bot
+    #[command(description = "Downloads todo file for current user from bot")]
     Download,
 }
 
@@ -78,8 +78,12 @@ fn schema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>>
 }
 
 async fn help(bot: Bot, msg: Message) -> Result<()> {
-    bot.send_message(msg.chat.id, Command::descriptions().to_string())
-        .await?;
+    let upload_description = "upload — Uploads todo file to replace the one on the bot (not a command, just send the file in the chat to upload)";
+    bot.send_message(
+        msg.chat.id,
+        Command::descriptions().to_string() + "\n" + upload_description,
+    )
+    .await?;
     Ok(())
 }
 
